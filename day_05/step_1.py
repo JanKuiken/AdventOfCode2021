@@ -33,28 +33,7 @@ def add_point_to_points_dict(d, x, y):
         d[(x,y)] = 1
 
 
-def calculate_points(line_data):
-    '''
-    returns a dict with tuple(x,y) as key and occurences as value
-    '''
-    points = {}
-    for start,end in line_data:
-        x1 = start[0]
-        y1 = start[1]
-        x2 = end[0]
-        y2 = end[1]
-        if (x1 == x2):
-            for y in range( min(y1,y2), max(y1,y2) + 1):
-                add_point_to_points_dict(points, x1, y)
-        elif (y1 == y2):
-            for x in range( min(x1,x2), max(x1,x2) + 1):
-                add_point_to_points_dict(points, x, y1)
-        else:
-            # ignore non horizontal or vertical lines
-            pass
-    return points
-
-def calculate_points_2(line_data):
+def calculate_points(line_data, include_diagonals=False):
     '''
     returns a dict with tuple(x,y) as key and occurences as value
     '''
@@ -71,11 +50,12 @@ def calculate_points_2(line_data):
             for x in range( min(x1,x2), max(x1,x2) + 1):
                 add_point_to_points_dict(points, x, y1)
         elif ( abs(x2 - x1) == abs(y2 - y1) ): # diagonals
-            l = abs(x2 - x1)
-            dx = np.sign(x2 - x1)
-            dy = np.sign(y2 - y1)
-            for d in range(l+1):
-                add_point_to_points_dict(points, x1 + d * dx, y1 + d * dy)
+            if include_diagonals:
+                l = abs(x2 - x1)
+                dx = np.sign(x2 - x1)
+                dy = np.sign(y2 - y1)
+                for d in range(l+1):
+                    add_point_to_points_dict(points, x1 + d * dx, y1 + d * dy)
         else:
             # ignore other lines
             pass
@@ -111,7 +91,7 @@ print(sum([value > 1 for value in points.values()]))
 
 print("=== part 2 ===")
 
-points = calculate_points_2(data)
+points = calculate_points(data, True)
 if test_mode:
     print_points(points)
 print(sum([value > 1 for value in points.values()]))
