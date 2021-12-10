@@ -24,6 +24,8 @@ points = {
     "}" : 1197,
     ">" : 25137,
 }
+open_brackets  = ["(","[","{","<"]
+close_brackets = [")","]","}",">"]
 
 print("=== part 1 ===")
 
@@ -32,9 +34,9 @@ for line in lines:
     line = line.strip()
     stack = deque()
     for ch in line:
-        if ch in ["(","[","{","<"]:
+        if ch in open_brackets:
             stack.append(ch)
-        if ch in [")","]","}",">"]:
+        if ch in close_brackets:
             if len(stack) == 0 or matching_open[ch] != stack[-1]:
                 # corrupt
                 score = points[ch]
@@ -60,14 +62,12 @@ line_scores = []
 for line in lines:
     line = line.strip()
     stack = deque()
-    corrupt = False
     for ch in line:
-        if ch in ["(","[","{","<"]:
+        if ch in open_brackets:
             stack.append(ch)
-        if ch in [")","]","}",">"]:
+        if ch in close_brackets:
             if len(stack) == 0 or matching_open[ch] != stack[-1]:
                 # corrupt
-                corrupt = True
                 break 
             else:
                 stack.pop()
