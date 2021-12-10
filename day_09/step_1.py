@@ -42,9 +42,7 @@ def is_lowest(d, row, col, neighbours):
     
 print("=== part 1 ===")
 
-# even cryptisch doen met een bool array die gebruikt wordt voor indexing....
 low_positions = []
-
 for pos in product(range(max_row), range (max_col)):
     neighbours = find_neighbours(pos)
     if all([ data[neighbour] > data[pos] for neighbour in neighbours]):
