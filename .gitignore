@@ -1,6 +1,8 @@
 # don't add the input files
 input.txt
 */input.txt
+test_input.txt
+*/test_input.txt
 
 # don't add cpp executables
 a.out
