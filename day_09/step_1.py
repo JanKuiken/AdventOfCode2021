@@ -36,10 +36,6 @@ def find_neighbours(pos):
     if (col < (max_col-1)) : neighbours.append((row  , col+1))
     return neighbours
 
-def is_lowest(d, row, col, neighbours):
-    value = d[row,col]
-    return all([ d[neighbour] > value for neighbour in neighbours])
-    
 print("=== part 1 ===")
 
 low_positions = []
