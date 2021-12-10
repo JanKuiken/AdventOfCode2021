@@ -87,5 +87,3 @@ print("middle score", line_scores[middle_index])
 
 
             
-
-

@@ -5,6 +5,7 @@
 test_mode = False
 
 import numpy as np
+from itertools import product
 
 # read file
 filename = "test_input.txt" if test_mode else "input.txt"
@@ -18,14 +19,16 @@ for line in lines:
 # nette NumPy array van maken
 data = np.array(data)
 
+# we gebruiken data als globale variabele (wordt btw niet meer veranderd).
+# meer 'globals':
+max_row, max_col = data.shape
+# we gebruiken tuples(row,col) als indeces voor data, deze noemen we pos(itie)
+
 if test_mode:
     print(data)
 
-def find_neighbours(d,row,col):
-    """
-    returns a list of neighbours of row,col in 2D array d
-    """
-    max_row, max_col = d.shape
+def find_neighbours(pos):
+    row, col = pos
     neighbours = []
     if (row > 0)           : neighbours.append((row-1, col  ))
     if (row < (max_row-1)) : neighbours.append((row+1, col  ))
@@ -40,38 +43,37 @@ def is_lowest(d, row, col, neighbours):
 print("=== part 1 ===")
 
 # even cryptisch doen met een bool array die gebruikt wordt voor indexing....
-low_points = np.zeros_like(data, dtype=bool)
-max_row, max_col = data.shape
-for row in range(max_row):
-    for col in range(max_col):
-        value = data[row,col]
-        neighbours = find_neighbours(data,row,col)
-        if is_lowest(data, row, col, neighbours):
-            low_points[row,col] = True
+low_positions = []
 
-risk_level = data[low_points].sum() + low_points.sum()
-print(risk_level)
+for pos in product(range(max_row), range (max_col)):
+    neighbours = find_neighbours(pos)
+    if all([ data[neighbour] > data[pos] for neighbour in neighbours]):
+        low_positions.append(pos)
+
+risk_level = 0
+for pos in low_positions:
+    risk_level += data[pos] + 1
+print("risk_level", risk_level)
+
 
 print("=== part 2 ===")
 
 # komen we er mee weg om de swamps te laten groeien tot we een 9 tegen komen?
 
-def extend_swamp(d, swamp, row, col):
-    neighbours = find_neighbours(d, row,col)
-    for pos in neighbours:
-        if not pos in swamp and d[pos] != 9:
-           swamp.append(pos)
-           extend_swamp(d, swamp, *pos)
+# altijd leuk, een recursieve functie, let op: swamp is een lijst van
+# posities, h.e.e.a. werkt allemaal omdat een list mutable is....
+def extend_swamp(swamp, pos):
+    swamp.append(pos)
+    for neighbour in find_neighbours(pos):
+        if not neighbour in swamp and data[neighbour] != 9:
+           extend_swamp(swamp, neighbour)
 
-swamp_sizes = []        
-for row in range(max_row):
-    for col in range(max_col):
-        if low_points[row,col]:
-            swamp = [(row,col)]
-            extend_swamp(data, swamp, row, col)
-            swamp_sizes.append(len(swamp))
+swamp_sizes = []
+for pos in low_positions:
+    swamp = []
+    extend_swamp(swamp, pos)
+    swamp_sizes.append(len(swamp))
 
-print(np.product(sorted(swamp_sizes)[-3:]))
-
-
+# en reken het antwoord uit (product van de grootste drie)
+print("antwoord", np.product(sorted(swamp_sizes)[-3:]))
 
