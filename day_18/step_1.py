@@ -1,0 +1,244 @@
+
+# python script for AdventOfCode 2021, day 19, see: https://adventofcode.com/
+
+#  Test mode uses test data and prints some debug info
+test_mode = False
+
+# read file
+filename = "test_input.txt" if test_mode else "input.txt"
+with open(filename) as f:
+    lines = f.readlines()
+
+# some functions ...
+def empty_node():
+    return {"value" : None, 
+            "left"  : None,
+            "right" : None, }
+
+def parse_snailfish_str(s):
+    # first check for a single digit
+    target = empty_node()
+    if len(s) == 1:
+        if not s.isdigit():
+            raise ValueError("Invalid snailfish_str (len=1, no digit)")
+        target["value"] = int(s)
+        return target        
+    # second check for brackets and left right
+    if s[0] != "[" or s[-1] != "]":
+        raise ValueError("Invalid snailfish_str (bracket error)")
+    bracket_depth = 0
+    for i,c in enumerate(s):
+        if c == "[" : bracket_depth += 1
+        if c == "]" : bracket_depth -= 1
+        if c == "," and bracket_depth == 1:
+            target["left"]  = parse_snailfish_str(s[1:i])
+            target["right"] = parse_snailfish_str(s[i+1:-1])
+            #target["left"]["parent"] = target
+            #target["right"]["parent"] = target
+            return target
+    raise ValueError("Invalid snailfish_str (syntax error)", s)
+
+def snailfish_str(sf_node):
+    if sf_node["value"] != None:
+        return str(sf_node["value"])
+    else:
+        return "[" + snailfish_str(sf_node["left"]) + "," + snailfish_str(sf_node["right"]) + "]"
+
+def print_snailfish(sf):
+    inorder = inorder_list(sf)
+    for item in inorder:
+        prefix = "    " * item["depth"]
+        print(prefix, item["node"]["value"] if item["regular"] else "<")
+
+def add_snailfish(sf1,sf2):
+    target = empty_node()
+    target["left"]  = sf1    # do we need (deep)copies ?, nweeh...
+    target["right"] = sf2
+    reduce(target)
+    return target
+
+def inorder_list(root):
+    inorder = []
+    inorder_list_util(root, inorder, 0)
+    return inorder
+
+def inorder_list_util(node, inorder, depth):
+    if node == None:
+        return
+    inorder_list_util(node["left"], inorder, depth+1)
+    inorder.append({ "node"    : node, 
+                     "depth"   : depth, 
+                     "regular" : node["value"] != None })
+    inorder_list_util(node["right"], inorder, depth+1)
+    return
+
+def explode(sf):
+    # check if we need to 'explode' something, if so
+    #   - explode the first occurence
+    #   - return True
+    # else:
+    #   - return False
+    inorder = inorder_list(sf)
+    max_depth = max([item["depth"] for item in inorder])
+    if max_depth > 5:
+        raise ValueError("Invalid snailfish, depth > 5")
+    for i, item in enumerate(inorder):
+        if item["depth"] == 4 and not item["regular"]:
+            left_value = item["node"]["left"]["value"]
+            right_value = item["node"]["right"]["value"]
+            left_items = inorder[:i-1] # -1 skip 'left_value'
+            left_items.reverse()  # 
+            for li in left_items:
+                if li["regular"]:
+                    li["node"]["value"] += left_value
+                    break
+            right_items = inorder[i+2:] # +2 skip 'right_value'
+            for ri in right_items:
+                if ri["regular"]:
+                    ri["node"]["value"] += right_value
+                    break
+            # change item under consideration to regular node with value 0
+            item["node"]["value"] = 0
+            item["node"]["left"] = None
+            item["node"]["right"] = None
+            return True
+    return False
+
+def split(sf):
+    # check if we need to 'split' something, if so
+    #   - do it
+    #   - return True
+    # else:
+    #   - return False
+    inorder = inorder_list(sf)
+    for item in inorder:
+        if item["regular"] and item["node"]["value"] >= 10:
+            # split this item
+            value = item["node"]["value"]
+            if value % 2 == 0:
+                value_left  = value // 2
+                value_right = value // 2 
+            else:
+                value_left  = value // 2
+                value_right = value // 2 + 1 
+            # change the node
+            item["node"]["value"]          = None
+            item["node"]["left"]           = empty_node()
+            item["node"]["right"]          = empty_node()
+            item["node"]["left"]["value"]  = value_left
+            item["node"]["right"]["value"] = value_right
+            return True
+    return False
+
+def reduce(sf):
+    # explode and split a snailfish untill we are done, quote from the AoC site:
+    #
+    #   To reduce a snailfish number, you must repeatedly do the first action
+    #   in this list that applies to the snailfish number:
+    #   - If any pair is nested inside four pairs, the leftmost such pair explodes.
+    #   - If any regular number is 10 or greater, the leftmost such regular number splits.
+    #   Once no action in the above list applies, the snailfish number is reduced.
+    #   
+    #   During reduction, at most one action applies, after which the process returns to 
+    #   the top of the list of actions. For example, if split produces a pair that meets 
+    #   the explode criteria, that pair explodes before other splits occur.
+    while True:
+        explode_check_needed = True
+        while explode_check_needed:
+            explode_check_needed = explode(sf)
+
+        has_been_split = split(sf)
+        if not has_been_split:
+            # we're done
+            break
+
+def magnitude(sf_node):
+    # quote from the AoC site:
+    #   The magnitude of a pair is 3 times the magnitude of its left element plus 2 times 
+    #   the magnitude of its right element. The magnitude of a regular number is just 
+    #   that number.
+    if sf_node["value"] != None:
+        return sf_node["value"]
+    else:
+        return 3 * magnitude(sf_node["left"]) + 2 * magnitude(sf_node["right"])
+
+print("=== part 1 ===")
+
+
+if test_mode:
+
+    # a lot of manually 'ad hoc' tests, used during writing several functions...
+    # using the examples mentioned at the AoC site
+
+    sf4 = parse_snailfish_str("[[[[[9,8],1],2],3],4]")
+    print_snailfish(sf4)
+    print("-" * 79)
+    explode(sf4)
+    print_snailfish(sf4)
+    print("-" * 79)
+
+    sf4 = parse_snailfish_str("[[3,[2,[1,[7,3]]]],[6,[5,[4,[3,2]]]]]")
+    print_snailfish(sf4)
+    print("-" * 79)
+    explode(sf4)
+    print_snailfish(sf4)
+    print(snailfish_str(sf4))
+    print("-" * 79)
+
+    sf1 = parse_snailfish_str("[[[[4,3],4],4],[7,[[8,4],9]]]") 
+    sf2 = parse_snailfish_str("[1,1]")
+    print(snailfish_str(sf1))
+    print(snailfish_str(sf2))
+    sf3 = add_snailfish(sf1,sf2)
+    print(snailfish_str(sf3))
+    explode(sf3)
+    print(snailfish_str(sf3))
+    explode(sf3)
+    print(snailfish_str(sf3))
+    split(sf3)
+    print(snailfish_str(sf3))
+    split(sf3)
+    print(snailfish_str(sf3))
+    explode(sf3)
+    print(snailfish_str(sf3))
+
+    print("-" * 79)
+    sf1 = parse_snailfish_str("[[[[4,3],4],4],[7,[[8,4],9]]]") 
+    sf2 = parse_snailfish_str("[1,1]")
+    sf3 = add_snailfish(sf1,sf2)
+    print(snailfish_str(sf3))
+    reduce(sf3)
+    print(snailfish_str(sf3))
+
+    print("-" * 79)
+    nagnitude_sf = parse_snailfish_str("[[9,1],[1,9]]")
+    print(snailfish_str(nagnitude_sf))
+    print(magnitude(nagnitude_sf))
+
+
+sf_numbers = []
+for line in lines:
+    sf_numbers.append(parse_snailfish_str(line.strip()))
+
+print("-" * 79)
+accumulator = sf_numbers[0]
+print(snailfish_str(accumulator))
+for sf in sf_numbers[1:]:
+    accumulator = add_snailfish(accumulator, sf)
+print(snailfish_str(accumulator))
+print("Answer ", magnitude(accumulator))
+
+print("=== part 2 ===")
+
+# not quite sure if we changed 'sf_numbers', to be sure we use
+# the string values from lines
+
+sums = []
+for l1 in lines:
+    for l2 in lines:
+        if l2 != l1:
+            sf1 = parse_snailfish_str(l1.strip())
+            sf2 = parse_snailfish_str(l2.strip())
+            sums.append(magnitude(add_snailfish(sf1,sf2)))
+print("Answer ", max(sums))
+
