@@ -13,19 +13,17 @@ with open(filename) as f:
     lines = f.readlines()
 
 # some functions ...
-def empty_node():
-    return {"value" : None, 
-            "left"  : None,
-            "right" : None, }
+def new_node(value=None, left= None, right=None):
+    return {"value" : value, 
+            "left"  : left,
+            "right" : right, }
 
 def parse_snailfish_str(s):
     # first check for a single digit
-    target = empty_node()
     if len(s) == 1:
         if not s.isdigit():
             raise ValueError("Invalid snailfish_str (len=1, no digit)")
-        target["value"] = int(s)
-        return target        
+        return new_node(value = int(s))        
     # second check for brackets and left right
     if s[0] != "[" or s[-1] != "]":
         raise ValueError("Invalid snailfish_str (bracket error)")
@@ -34,11 +32,8 @@ def parse_snailfish_str(s):
         if c == "[" : bracket_depth += 1
         if c == "]" : bracket_depth -= 1
         if c == "," and bracket_depth == 1:
-            target["left"]  = parse_snailfish_str(s[1:i])
-            target["right"] = parse_snailfish_str(s[i+1:-1])
-            #target["left"]["parent"] = target
-            #target["right"]["parent"] = target
-            return target
+            return new_node( left  = parse_snailfish_str(s[1:i]), 
+                             right = parse_snailfish_str(s[i+1:-1]) )
     raise ValueError("Invalid snailfish_str (syntax error)", s)
 
 def snailfish_str(sf_node):
@@ -54,11 +49,12 @@ def print_snailfish(sf):
         print(prefix, item["node"]["value"] if item["regular"] else "<")
 
 def add_snailfish(sf1,sf2):
-    target = empty_node()
-    target["left"]  = sf1    # do we need (deep)copies ?, nweeh...
-    target["right"] = sf2
-    reduce(target)
-    return target
+    # Quote from the AoC site:
+    #
+    #  To add two snailfish numbers, form a pair from the left and right parameters 
+    #  of the addition operator. 
+    #  There's only one problem: snailfish numbers must always be reduced    
+    return reduce(new_node(left=sf1, right=sf2))
 
 def inorder_list(node, depth=0):
     retval = []
@@ -77,6 +73,7 @@ def explode(sf):
     #   - return True
     # else:
     #   - return False
+    # note: sf is changed 'inplace'
     inorder = inorder_list(sf)
     max_depth = max([item["depth"] for item in inorder])
     if max_depth > 5:
@@ -105,10 +102,11 @@ def explode(sf):
 
 def split(sf):
     # check if we need to 'split' something, if so
-    #   - do it
+    #   - split the first occurence
     #   - return True
     # else:
     #   - return False
+    # note: sf is changed 'inplace'
     inorder = inorder_list(sf)
     for item in inorder:
         if item["regular"] and item["node"]["value"] >= 10:
@@ -121,11 +119,9 @@ def split(sf):
                 value_left  = value // 2
                 value_right = value // 2 + 1 
             # change the node
-            item["node"]["value"]          = None
-            item["node"]["left"]           = empty_node()
-            item["node"]["right"]          = empty_node()
-            item["node"]["left"]["value"]  = value_left
-            item["node"]["right"]["value"] = value_right
+            item["node"]["value"]  = None
+            item["node"]["left"]   = new_node(value=value_left)
+            item["node"]["right"]  = new_node(value=value_right)
             return True
     return False
 
@@ -145,10 +141,12 @@ def reduce(sf):
         while explode(sf):
             pass
         if not split(sf):
-            return # we're done
+            break # we're done
+    return sf
 
 def magnitude(sf_node):
     # quote from the AoC site:
+    #
     #   The magnitude of a pair is 3 times the magnitude of its left element plus 2 times 
     #   the magnitude of its right element. The magnitude of a regular number is just 
     #   that number.
@@ -178,5 +176,4 @@ for l1 in lines:
             sf2 = parse_snailfish_str(l2.strip())
             sums.append(magnitude(add_snailfish(sf1,sf2)))
 print("Answer ", max(sums))
-
 
