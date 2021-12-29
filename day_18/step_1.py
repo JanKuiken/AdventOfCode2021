@@ -1,8 +1,11 @@
 
-# python script for AdventOfCode 2021, day 19, see: https://adventofcode.com/
+# python script for AdventOfCode 2021, day 18, see: https://adventofcode.com/
 
 #  Test mode uses test data and prints some debug info
 test_mode = False
+
+from copy import deepcopy
+from itertools import product
 
 # read file
 filename = "test_input.txt" if test_mode else "input.txt"
@@ -57,20 +60,16 @@ def add_snailfish(sf1,sf2):
     reduce(target)
     return target
 
-def inorder_list(root):
-    inorder = []
-    inorder_list_util(root, inorder, 0)
-    return inorder
-
-def inorder_list_util(node, inorder, depth):
+def inorder_list(node, depth=0):
+    retval = []
     if node == None:
-        return
-    inorder_list_util(node["left"], inorder, depth+1)
-    inorder.append({ "node"    : node, 
-                     "depth"   : depth, 
-                     "regular" : node["value"] != None })
-    inorder_list_util(node["right"], inorder, depth+1)
-    return
+        return []
+    this_list  = [ { "node"    : node,
+                     "depth"   : depth,
+                     "regular" : node["value"] != None } ]  
+    left_list  = inorder_list(node["left"], depth+1)
+    right_list = inorder_list(node["right"], depth+1)
+    return left_list + this_list + right_list
 
 def explode(sf):
     # check if we need to 'explode' something, if so
@@ -143,14 +142,10 @@ def reduce(sf):
     #   the top of the list of actions. For example, if split produces a pair that meets 
     #   the explode criteria, that pair explodes before other splits occur.
     while True:
-        explode_check_needed = True
-        while explode_check_needed:
-            explode_check_needed = explode(sf)
-
-        has_been_split = split(sf)
-        if not has_been_split:
-            # we're done
-            break
+        while explode(sf):
+            pass
+        if not split(sf):
+            return # we're done
 
 def magnitude(sf_node):
     # quote from the AoC site:
@@ -164,74 +159,16 @@ def magnitude(sf_node):
 
 print("=== part 1 ===")
 
-
-if test_mode:
-
-    # a lot of manually 'ad hoc' tests, used during writing several functions...
-    # using the examples mentioned at the AoC site
-
-    sf4 = parse_snailfish_str("[[[[[9,8],1],2],3],4]")
-    print_snailfish(sf4)
-    print("-" * 79)
-    explode(sf4)
-    print_snailfish(sf4)
-    print("-" * 79)
-
-    sf4 = parse_snailfish_str("[[3,[2,[1,[7,3]]]],[6,[5,[4,[3,2]]]]]")
-    print_snailfish(sf4)
-    print("-" * 79)
-    explode(sf4)
-    print_snailfish(sf4)
-    print(snailfish_str(sf4))
-    print("-" * 79)
-
-    sf1 = parse_snailfish_str("[[[[4,3],4],4],[7,[[8,4],9]]]") 
-    sf2 = parse_snailfish_str("[1,1]")
-    print(snailfish_str(sf1))
-    print(snailfish_str(sf2))
-    sf3 = add_snailfish(sf1,sf2)
-    print(snailfish_str(sf3))
-    explode(sf3)
-    print(snailfish_str(sf3))
-    explode(sf3)
-    print(snailfish_str(sf3))
-    split(sf3)
-    print(snailfish_str(sf3))
-    split(sf3)
-    print(snailfish_str(sf3))
-    explode(sf3)
-    print(snailfish_str(sf3))
-
-    print("-" * 79)
-    sf1 = parse_snailfish_str("[[[[4,3],4],4],[7,[[8,4],9]]]") 
-    sf2 = parse_snailfish_str("[1,1]")
-    sf3 = add_snailfish(sf1,sf2)
-    print(snailfish_str(sf3))
-    reduce(sf3)
-    print(snailfish_str(sf3))
-
-    print("-" * 79)
-    nagnitude_sf = parse_snailfish_str("[[9,1],[1,9]]")
-    print(snailfish_str(nagnitude_sf))
-    print(magnitude(nagnitude_sf))
-
-
 sf_numbers = []
 for line in lines:
     sf_numbers.append(parse_snailfish_str(line.strip()))
 
-print("-" * 79)
 accumulator = sf_numbers[0]
-print(snailfish_str(accumulator))
 for sf in sf_numbers[1:]:
     accumulator = add_snailfish(accumulator, sf)
-print(snailfish_str(accumulator))
 print("Answer ", magnitude(accumulator))
 
 print("=== part 2 ===")
-
-# not quite sure if we changed 'sf_numbers', to be sure we use
-# the string values from lines
 
 sums = []
 for l1 in lines:
@@ -241,4 +178,5 @@ for l1 in lines:
             sf2 = parse_snailfish_str(l2.strip())
             sums.append(magnitude(add_snailfish(sf1,sf2)))
 print("Answer ", max(sums))
+
 
