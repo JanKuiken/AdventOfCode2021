@@ -168,7 +168,37 @@ for k,v in path_to_scanner_0.items():
 print("\n\n== all_beacons:")
 pp.pprint(all_beacons)
 
-print("\n\n== len(all_beacons):", len(all_beacons), "( is answer for part 1)")
+print("\n\n== len(all_beacons):", len(all_beacons), "( is answer for part 1)\n\n")
 
+print("=== part 2 ===")
 
+# Beetje hetzelfde truukje als voor deel 1, we vervangen de beacon punten van
+# elke scanner door de oorsprong (punt (0,0,0))
+# Manhattan distance van alle oorsprongen en het maximum daarvan is 'n eitje
+
+all_origions = []
+all_origions.append(np.array([0,0,0]))   #  for scanner number 0
+
+for k,v in path_to_scanner_0.items():
+    if k == 0:
+        continue
+    n = len(v)
+    transformation_steps = [(v[i], v[i+1]) for i in range(n-1)]
+    
+    total_shift = np.array([0,0,0])
+    for step in reversed(transformation_steps):
+        total_shift += transformations[step][1]
+
+    point = np.array([0,0,0])
+    for step in reversed(transformation_steps):
+        point = np.dot(point, transformations[step][0])
+        point = point - transformations[step][1]
+
+    all_origions.append(point)
+
+manhattan_distances = []
+for p1,p2 in product(all_origions, repeat=2):
+    manhattan_distances.append(sum([abs(coor) for coor in (p2-p1)]))
+
+print(max(manhattan_distances))
 
