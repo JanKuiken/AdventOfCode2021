@@ -178,7 +178,7 @@ for state in winning_states_player_two:
 print("universes_where_player_one_won", universes_where_player_one_won)
 print("universes_where_player_two_won", universes_where_player_two_won)
 
-print("\n\nAnswer :", max(universes_where_player_one_won,universes_where_player_two_won))
+print("\n\nAnswer :", max(universes_where_player_one_won, universes_where_player_two_won))
 
 
 
