@@ -37,7 +37,7 @@ for line in lines:
 
 print("=== part 2 ===")
 
-# - ons belangrijkste data type is een blok met min-x,y,z en max-x,y,z
+# - ons belangrijkste data type is een blok met x-min,max, y-min,max, z-min,max
 # - we gaan blokken opslaan van cubes die 'on' zijn.
 # - rules werken we van boven naar beneden af
 # - bij een 'off' rule moeten we kijken naar overlap
@@ -45,16 +45,7 @@ print("=== part 2 ===")
 #   - bij deelse over wordt het on-blok gesplitst in deelblokken, waarbij
 #        overlapblok wegvalt en de andere overblijven
 # - bij een 'on' rule moeten we ook naar overlap kijken, anders krijgen we
-#        bij de eind-adminstratie dubbel tellingen, maar hoe ???
-
-
-# oke dus:
-# - speel terrein is ongeveer(-1e5..+1e5, -1e5..+1e5, -1e5..+1e5), maw ongeveer 10^15 cubes...
-# - we hebben meer on-rules dan off rules
-# - blokken zijn tot ca. 40k hoog/breed/lang en vanaf ongeveer 10
-
-# paniek-status-gevoel nog steeds hoog, wellicht wordt dat verlicht als we eerst naar 
-# een 1D situatie bekijken
+#        bij de eind-adminstratie dubbel tellingen
 
 def overlap_and_remainders(base, overlap):
     """
@@ -62,80 +53,55 @@ def overlap_and_remainders(base, overlap):
     Returns:
       - overlapped region
       - list of remaining regions of 'base'
-      - list of remaining regions of 'overlap'
     """
     # no overlap
     if overlap.max < base.min or overlap.min > base.max:
-        return None, [base], [overlap]
+        return None, [base]
     # exact overlap
     if overlap.min == base.min and overlap.max == base.max:
-        return base, [], []
+        return base, []
     # completely inside
     if overlap.min > base.min and overlap.max < base.max:
-        return overlap,                                                       \
-               [Line(base.min, overlap.min-1), Line(overlap.max+1, base.max)],\
-               []
-
+        return overlap, [Line(base.min, overlap.min-1), Line(overlap.max+1, base.max)]
     # completely outside
     if overlap.min < base.min and overlap.max > base.max:
-        return base,                                                          \
-               [],                                                            \
-               [Line(overlap.min, base.min-1), Line(base.max+1, overlap.max)]
-
+        return base, []
     # right exact match
     if overlap.max == base.max:
         if overlap.min < base.min:
-            return base,                                        \
-                   [],                                          \
-                   [Line(overlap.min, base.min-1)] 
+            return base, []
         else:    # overlap.min > base.min
-            return Line(overlap.min, base.max),                 \
-                   [Line(base.min, overlap.min-1)],             \
-                   []
-
+            return Line(overlap.min, base.max), [Line(base.min, overlap.min-1)]
     # left exact match
     if overlap.min == base.min:
         if overlap.max > base.max:
-            return base,                                        \
-                   [],                                          \
-                   [Line(base.max+1, overlap.max)]
+            return base, []
         else: # overlap.max < base.max
-            return Line(base.min, overlap.max),                 \
-                   [Line(overlap.max+1, base.max)],             \
-                   []
-
+            return Line(base.min, overlap.max), [Line(overlap.max+1, base.max)]
     # left overlap
     if overlap.max < base.max:
-        return Line(base.min, overlap.max),                     \
-               [Line(overlap.max+1, base.max)],                 \
-               [Line(overlap.min, base.min-1)] 
-
+        return Line(base.min, overlap.max), [Line(overlap.max+1, base.max)] 
     # right overlap
     if overlap.min > base.min:
-        return Line(overlap.min, base.max),                    \
-               [Line(base.min, overlap.min-1)],                \
-               [Line(base.max+1, overlap.max)]
-    
+        return Line(overlap.min, base.max), [Line(base.min, overlap.min-1)]    
     # did i miss a situation? :
     raise NotImplementedError("unhandled situation, notify developer")
-
-
 
 def apply_rule(rule):
     global all_on_blocks
 
-    # empty list (at startup.... if every cube is turned off)
+    # empty list (at startup.... or if every cube is turned off)
     if len(all_on_blocks) == 0 and rule.on:
         all_on_blocks.append(rule.block)
         return # we're done
 
-    # we copy every thing to a new list and then swap them back
+    # we copy every thing to a new list and later swap them back
     new_on_blocks = []
     for on_block in all_on_blocks:
         # determine overlap in three directions
-        overlap_x, remainders_x, _ = overlap_and_remainders(on_block.lx, rule.block.lx)
-        overlap_y, remainders_y, _ = overlap_and_remainders(on_block.ly, rule.block.ly)
-        overlap_z, remainders_z, _ = overlap_and_remainders(on_block.lz, rule.block.lz)
+        overlap_x, remainders_x = overlap_and_remainders(on_block.lx, rule.block.lx)
+        overlap_y, remainders_y = overlap_and_remainders(on_block.ly, rule.block.ly)
+        overlap_z, remainders_z = overlap_and_remainders(on_block.lz, rule.block.lz)
         # check if there is overlap in all directions
         if overlap_x and overlap_y and overlap_z:
             # first add all sectioned blocks 
@@ -148,7 +114,8 @@ def apply_rule(rule):
             new_on_blocks.remove(Block(overlap_x, overlap_y, overlap_z))
         else:
             new_on_blocks.append(on_block)
-    # if we had an on rule we have to add the block off the rule
+            
+    # if we had an on rule we have to add the block of the rule
     if rule.on:
         new_on_blocks.append(rule.block)
 
